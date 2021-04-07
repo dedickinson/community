@@ -11,8 +11,8 @@ Duncan Dickinson | Customer Engineer | Google
 <p style="background-color:#CAFACA;"><i>Contributed by Google employees.</i></p>
 
 The [OWASP Dependency-Track project](https://owasp.org/www-project-dependency-track/)
-is a component analysis platform for tracking dependencies in your environment, their 
-licences and any associated vulnerabilities. It's a very useful tool to get up and running as
+is a component analysis platform for tracking dependencies, their 
+licences and associated vulnerabilities. It's a very useful tool to get up and running as
 you build out your software supply chain approach.
 
 Dependency Track accepts Software Bill of Materials (SBOMs) in [CycloneDX](https://cyclonedx.org/)
@@ -24,7 +24,7 @@ The approach is useful in a number of scenarios:
 - You can manually list dependencies for legacy systems
 
 Using Dependency Track gives you one element towards managing your approach to monitoring 
-for and responding to  
+and responding to  
 [Using Components with Known Vulnerabilities](https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities)
 from the OWASP Top-10. The idea is to have an inventory of components in use across your environment. 
 Using a variety of resources such as the 
@@ -32,14 +32,14 @@ Using a variety of resources such as the
 you can then determine if you have vulnerable components and respond in accordance with your 
 organisation's processes. 
 
-This demonstrator deploys [Dependency Track](https://dependencytrack.org/) to Google Cloud
+This tutorial deploys [Dependency Track](https://dependencytrack.org/) to Google Cloud
 and illustrates its use in a small Python demo.
 
 ## Objectives
 
-1. [_Generate an SBOM_](#generate-an-sbom) takes you through a basic project and its SBOM
+1. [_Generate an SBOM_](#generate-an-sbom) takes you through creating an SBOM for a basic project.
 1. [_Deploy Dependency Track_](#deploy-dependency-track) provides basic setup for a deployment. 
-    Two pathways are offered for deploying Dependency Track 
+    Two pathways are offered for deployment: 
     - Cloud Run for a quick demo rollout
     - Google Kubernetes Engine and Cloud SQL for a more long-term approach
 1. [_Using Dependency Track_](#using-dependency-track) will then demonstrate uploading an SBOM and integrating
@@ -98,7 +98,7 @@ repository and change into this tutorial's directory:
 
 ```bash
 git clone https://github.com/GoogleCloudPlatform/community.git
-cd community/tutorials/deploy_dependency_track
+cd community/tutorials/deploy-dependency-track
 ```
 
 ## Generate an SBOM
@@ -117,7 +117,7 @@ cd demo-project
 poetry install
 ```
 
-Now run `poetry show --tree` you will see the project's set of dependencies (snippet below):
+Now run `poetry show --tree` and you will see the project's set of dependencies (snippet below):
 
 ```
 flask 1.1.2 A simple framework for building complex web applications.
@@ -128,12 +128,12 @@ flask 1.1.2 A simple framework for building complex web applications.
 └── werkzeug >=0.15
 ```
 
-The [CycloneDX](https://cyclonedx.org/) project defines a standard for describing
-software bill of materials (SBOMs) as well as a variety of 
+The [CycloneDX](https://cyclonedx.org/) project defines a schema for 
+software bill of materials (SBOMs) as well as providing  
 [tools](https://cyclonedx.org/tool-center/) that can be used with various programming languages
- and CI/CD tools. 
- The Python version ([`cyclonedx-bom`](https://pypi.org/project/cyclonedx-bom/)) is included 
- as a development dependency of the demo project. 
+and CI/CD tools. 
+The Python version ([`cyclonedx-bom`](https://pypi.org/project/cyclonedx-bom/)) is included 
+as a development dependency of the demo project. 
 
 Use `poetry` to generate a `requirements.txt` file:
 
@@ -141,10 +141,7 @@ Use `poetry` to generate a `requirements.txt` file:
 poetry export --without-hashes>requirements.txt
 ```
 
-You'll see the familiar `requirements.txt` file has been created. This includes only the primary
-dependencies, not the development ones (such as `cyclonedx-bom` itself). You may choose to include
-development libraries (such as `pytest`, `nox` etc) in the SBOM as this provides a more comprehensive
-view of the project. I've chosen not to do this in this demo for the sake of brevity.
+You'll see the familiar `requirements.txt` file has been created. 
 
 Now, generate a JSON-formatted Cyclone DX SBOM:
 
@@ -197,11 +194,11 @@ We'll return to the `bom` file when we've set up a Dependency Track service.
 
 ## Deploy Dependency Track
 
-This guide provides 2 pathways for deploying Dependency Track:
+This tutorial provides 2 pathways for deploying Dependency Track:
 
 1. Deploy a quick demonstrator to Cloud Run
-1. Setup a more long-term environment in Google Kubernetes Engine (GKE) and Cloud SQL 
-   - _this requires you to have the ability to add subdomains to a domain name under your control_.
+1. Setup a more long-term environment in Google Kubernetes Engine (GKE) and Cloud SQL -
+   _this requires you to have the ability to add subdomains to a domain name under your control_.
 
 Before taking either pathway we'll prepare the Dependency Track container images for use in Cloud Run or GKE.
 There are two images we need:
@@ -285,9 +282,9 @@ gcloud config set run/platform managed
 gcloud config set run/region $GCP_REGION
 ```
 
-#### Deploy the API service
+#### Deploy the API Server
 
-Launch the API service in Cloud Run with the following command:
+Launch the API Server in Cloud Run with the following command:
 
 ```bash
 gcloud run deploy dependency-track-apiserver \
@@ -300,8 +297,10 @@ export DT_APISERVER=$(gcloud run services describe dependency-track-apiserver \
 echo $DT_APISERVER
 ```
 
-Once deployed you'll get a URL to access the API service.
-The API service can take a while (up to 30-mins) to download the required data from various data sources.
+Once deployed you'll get a URL to access the API Server.
+The API Server can take a while (up to 30-mins) to download the required data from various data sources.
+During this time the API is not available so don't panic if you get an error trying to access
+the URL.
 
 
 #### Deploy the frontend
@@ -324,7 +323,7 @@ Now that the Cloud Run services have been configured, move on to the
 
 The Cloud Run version is a quick demo approach that uses an embedded H2 database. The recommended 
 [Dependency Track resources]([https://docs.dependencytrack.org/getting-started/deploy-docker/])
-are also rather hefty with the API Server looking for 4 CPU cores and 16GB RAM - exceeding what we
+are rather hefty with the API Server looking for 4 CPU cores and 16GB RAM - exceeding what we
 can get from Cloud Run.
 
 For a more substantial approach, this pathway configures the system to run in 
@@ -337,7 +336,7 @@ TLS certificates for the domains.
 This pathway is much more involved that the Cloud Run option. As you can see from
 the diagram below, a number of services will be utilised:
 
-- The Dependency Track Frontend and API Service components will be hosted as
+- The Dependency Track Frontend and API Server components will be hosted as
   GKE pods, fronted by Cloud Load Balancers. The required container images will
   be hosted in the Artifact Registry.
 - The GKE instance will operate as a private cluster so a Cloud NAT will be 
@@ -356,12 +355,12 @@ issues that you may encounter.
 There's quite a few services we'll need to enable:
 
 - GKE (`container.googleapis.com`)
-- Compute Engine (`compute.googleapis.com`) - runs the VMs hosting GKE nodes
+- Compute Engine (`compute.googleapis.com`) (runs the VMs hosting GKE nodes)
 - Cloud SQL (`sql-component.googleapis.com`)
 - Cloud SQL Admin (`sqladmin.googleapis.com`)
 - Secret Manager (`secretmanager.googleapis.com`)
-- Service Networking (`servicenetworking.googleapis.com`) - 
-    provides functionality needed for Cloud SQL private instances
+- Service Networking (`servicenetworking.googleapis.com`)
+    (provides functionality needed for Cloud SQL private instances)
 
 This is all enabled with the following command:
 
@@ -415,7 +414,7 @@ gcloud compute ssl-certificates create dependency-track-cert-ui \
 You can check in on the progress of the certificates by running 
 `gcloud compute ssl-certificates list`. 
 
-The complete setup of the certificates only completes when they're aligned to a 
+The setup of the certificates only completes when they're aligned to a 
 Load Balancer so keep going with the instructions.
 
 #### Create external IPs
@@ -426,8 +425,10 @@ Next, set up two external IP addresses:
 gcloud compute addresses create dependency-track-ip-api --global
 gcloud compute addresses create dependency-track-ip-ui --global
 
-export DT_IP_API=$(gcloud compute addresses describe dependency-track-ip-api --global --format="value(address)")
-export DT_IP_UI=$(gcloud compute addresses describe dependency-track-ip-ui --global --format="value(address)")
+export DT_IP_API=$(gcloud compute addresses describe dependency-track-ip-api \
+                    --global --format="value(address)")
+export DT_IP_UI=$(gcloud compute addresses describe dependency-track-ip-ui \
+                    --global --format="value(address)")
 ```
 
 At this point you can add your chosen domain names and the IP addresses to your DNS system. 
@@ -435,8 +436,8 @@ As DNS entries can take up to 48-hours to propagate, it's best to get this done 
 
 #### Set up a GKE cluster
 
-We'll create a VPC to house the private cluster. 
-In the commands below we'll create a VPC and enable
+We'll create a VPC to house the private GKE cluster. 
+In the commands below we create a VPC and enable
 [private service access](https://cloud.google.com/sql/docs/postgres/configure-private-services-access#configure-access)
 - the latter providing the ability to create a Cloud SQL instance without a public IP address.
 
@@ -460,9 +461,8 @@ gcloud services vpc-peerings connect \
 
 Next, we create a private GKE cluster. The code below creates a private cluster, but
 the Kubernetes control plane is available on a public endpoint. This will allow you,
-for the purposes of this tutorial, to access the cluster with `kubectl` from you PC
-or through Cloud Shell. In a production environment you'll likely seek to limit access 
-to the control plane. Review 
+for the purposes of this tutorial, to access the cluster with `kubectl` from Cloud Shell. 
+In a production environment you'll likely seek to limit access to the control plane. Review 
 [Access to cluster endpoints](https://cloud.google.com/kubernetes-engine/docs/concepts/private-cluster-concept#overview)
 for further details.
 
@@ -515,8 +515,7 @@ functionality build into `kubectl`.
 You'll find the various deployment files under the `deploy` directory.
 
 Importantly, we use the the `envsubst` command to interpolate the various environment variables 
-in the deployment files. 
-You need to install the command in your CloudShell environment:
+in the deployment files. You need to install the command in your CloudShell environment:
 
 ```bash
 sudo apt install gettext-base
@@ -530,18 +529,18 @@ cat kustomization.base.yaml | envsubst >kustomization.yaml
 kubectl apply -k .
 ```
 
-#### Deploy the API Service
+#### Deploy the API Server
 
-There are more steps involved when deploying the API Service as we're going to 
+There are more steps involved when deploying the API Server as we're going to 
 use a Postgres database. The steps involved are:
 
 1. Create a service account for database access via Cloud SQL Proxy
 1. Create the Postgres database in Cloud SQL
-1. Deploy the API Service to GKE
+1. Deploy the API Server to GKE
 
 ##### Set up a service account
 
-As the API Server needs to access a database we'll create and use a service account with GKE
+As the API Server needs to access a database, we'll create and use a service account with GKE
 [workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 This will let the [SQL Proxy pod](https://cloud.google.com/sql/docs/postgres/connect-kubernetes-engine)
 connect to Cloud SQL via the service account.
@@ -654,10 +653,11 @@ the system.
 
 ##### TLS error
 
-If you visit the frontend or API service you might get a TLS error such as `ERR_SSL_VERSION_OR_CIPHER_MISMATCH`.
+If you visit the frontend or API Server you might get a TLS error such as `ERR_SSL_VERSION_OR_CIPHER_MISMATCH`.
 Check the TLS certificate status with `gcloud compute ssl-certificates list` - you need both of the
 certificates to be listed as "ACTIVE". If you see "FAILED_NOT_VISIBLE" just wait a while for the certificate to
 be provisioned to the load balancer. This can take some time (up to 60-minutes).
+
 Check out 
 [Troubleshooting SSL certificates](https://cloud.google.com/load-balancing/docs/ssl-certificates/troubleshooting)
 for more info.
@@ -720,7 +720,7 @@ API Server site. The following paths may be of interest:
 - `/api/version` - the service version
 - `/api/swagger.json` - the OpenAPI definition
 
-Once you have Dependency Track running, you're ready to login to the frontend - 
+Once you have the Dependency Track API and frontend running, you're ready to login to the frontend - 
 just head to the relevant domain:
 
 - If you used the Cloud Run pathway, you can determine the URL by running 
@@ -733,7 +733,7 @@ Refer to
 [Dependency Track's Initial Startup document](https://docs.dependencytrack.org/getting-started/initial-startup/)
 for more information.
 
-In the frontend user interface, go to the "Projects" screen and click on "+Create Project".
+In the frontend user interface, go to the "Projects" screen and click on "+ Create Project".
 
 ![New project screen](img/new_project.png)
 
@@ -853,11 +853,11 @@ Create the bucket using the following command:
 gsutil mb gs://${GCP_PROJECT_ID}-build
 ```
 
-If you uploaded the BOM from the terminal you may want to delete the project/version 
+If you previously uploaded the BOM from the terminal you may want to delete the project/version 
 in Dependency Track before you submit the BOM using Cloud Build. To delete it,
 go to the Dependency Track frontend, select the project from the list and click 
 "View Details" in the project screen (below).
-The pop-up dialog will have a "Delete" button that deleted the project.
+The pop-up dialog will have a "Delete" button that deletes the project.
 
 ![The View Details link is used to open the display to delete the project](img/delete_demo_project.png)
 
@@ -867,6 +867,8 @@ With that done you can now submit the build with the following command:
 gcloud builds submit --config cloudbuild.yaml \
   --substitutions=_DT_DOMAIN_API=$DT_DOMAIN_API,_DT_API_KEY=$DT_API_KEY . 
 ```
+
+Your build will start and push the generated BOM to Dependency Track.
 
 You can check out the details in the frontend UI or try out the API with `curl`. The following
 command will list all projects
@@ -887,6 +889,10 @@ curl --location --request GET \
 
 If you visit the API site you'll be able to access the OpenAPI definition for further
 API goodness. The address will look something like `https://<DT_DOMAIN_API>/api/swagger.json`.
+
+Take some time to explore Dependency Track and consider how/where you might use it.
+The scenarios provided here (manual upload, command line upload and CI/CD integration)
+are good starting points for including dependency tracking in your software supply chain.
 
 ## Cleaning up
 
