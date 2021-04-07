@@ -37,12 +37,12 @@ and illustrates its use in a small Python demo.
 
 ## Objectives
 
-1. _Generate an SBOM_ will take you through a basic project and its SBOM
-1. _Deploying Dependency Track to Google Cloud_ will provide basic setup
-   for a deployment. Two pathways are offered for deploying Dependency Track 
+1. [_Generate an SBOM_](#generate-an-sbom) takes you through a basic project and its SBOM
+1. [_Deploy Dependency Track_](#deploy-dependency-track) provides basic setup for a deployment. 
+    Two pathways are offered for deploying Dependency Track 
     - Cloud Run for a quick demo rollout
     - Google Kubernetes Engine and Cloud SQL for a more long-term approach
-1. _Using Dependency Track_ will then demonstrate uploading an SBOM and integrating
+1. [_Using Dependency Track_](#using-dependency-track) will then demonstrate uploading an SBOM and integrating
     Cloud Build.
 
 
@@ -57,7 +57,8 @@ This tutorial uses billable components of Google Cloud, including the following:
 *   [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine)
 *   [Cloud SQL](https://cloud.google.com/sql/)
 
-Use the [pricing calculator](https://cloud.google.com/products/calculator) to generate a cost estimate based on your projected usage.
+Use the [pricing calculator](https://cloud.google.com/products/calculator) to generate a cost estimate
+based on your projected usage.
 
 ## Before you begin
 
@@ -194,7 +195,22 @@ From that snippet you can see:
 
 We'll return to the `bom` file when we've set up a Dependency Track service.
 
-## Set up the Dependency Track images
+## Deploy Dependency Track
+
+This guide provides 2 pathways for deploying Dependency Track:
+
+1. Deploy a quick demonstrator to Cloud Run
+1. Setup a more long-term environment in Google Kubernetes Engine (GKE) and Cloud SQL 
+   - _this requires you to have the ability to add subdomains to a domain name under your control_.
+
+Before taking either pathway we'll prepare the Dependency Track container images for use in Cloud Run or GKE.
+There are two images we need:
+
+- The `frontend` image provides the web-based user interface
+- The `apiserver` image provides an Open API-based interface that is used by the frontend and when 
+  interacting with Dependency Track from other systems (such as submitting a BOM)
+
+### Set up the Dependency Track images
 
 The [Artifact Registry](https://cloud.google.com/artifact-registry) service will be utilised
 to store container images. [Container Analysis](https://cloud.google.com/container-analysis/docs/container-analysis)
@@ -249,18 +265,15 @@ You can always check your image collection with the following command:
 gcloud artifacts docker images list $GCP_REGISTRY
 ```
 
-## Deploy Dependency Track
-
-This guide provides 2 pathways for deploying Dependency Track:
-
-1. Deploy a quick demonstrator to Cloud Run
-1. Setup a more long-term environment in Google Kubernetes Engine (GKE) and Cloud SQL 
-   - _this requires you to have the ability to add subdomains to a domain name under your control_.
-
 ### Deploy to Cloud Run
 
 In this pathway we'll configure Dependency Track to run in [Cloud Run](https://cloud.google.com/run).
 This is a useful approach for quickly creating a demo instance for evaluation purposes.
+As you can see in the diagram below, two Cloud Run services are created to serve the
+Dependency Track Frontend and API Server. The previously configured Artifact Registry
+provides the container images used in the Cloud Run services.
+
+![Architectural diagram depicting a PC accessing the frontend and API components that are operating as Cloud Run services. Artifact Registry is depicted as providing images to the Cloud Run services.](img/deploy_cloud_run.png)
 
 Enable the Cloud Run API and set the default region. We'll also use the `managed` platform approach
 (rather than an Anthos platform):
@@ -274,10 +287,7 @@ gcloud config set run/region $GCP_REGION
 
 #### Deploy the API service
 
-The Dependency Track API service provides an Open API web service and the services 
-relating to storing vulnerability data and evaluating SBOMs. 
-
-Launch the API service in Cloud Run with the following command.
+Launch the API service in Cloud Run with the following command:
 
 ```bash
 gcloud run deploy dependency-track-apiserver \
@@ -296,7 +306,7 @@ The API service can take a while (up to 30-mins) to download the required data f
 
 #### Deploy the frontend
 
-The frontend user interface (UI) is a client-side web application that communicates with the API service.
+Launch the Frontend in Cloud Run with the following command:
 
 ```bash
 gcloud run deploy dependency-track-frontend \
@@ -304,6 +314,11 @@ gcloud run deploy dependency-track-frontend \
   --allow-unauthenticated --cpu=2 --memory=1Gi --port=80 \
   --set-env-vars="API_BASE_URL=$DT_APISERVER"
 ```
+
+#### Next steps
+
+Now that the Cloud Run services have been configured, move on to the
+[Using Dependency Track](#using-dependency-track) section.
 
 ### Deploy to Google Kubernetes Engine and Cloud SQL
 
@@ -318,6 +333,20 @@ Google Kubernetes Engine (GKE) and use a Cloud SQL Postgres database.
 Before you continue please note that you will need access to a domain in which you can create two
 sub-domains - one for each of the Frontend and the API Server. This is necessary as we'll be creating
 TLS certificates for the domains. 
+
+This pathway is much more involved that the Cloud Run option. As you can see from
+the diagram below, a number of services will be utilised:
+
+- The Dependency Track Frontend and API Service components will be hosted as
+  GKE pods, fronted by Cloud Load Balancers. The required container images will
+  be hosted in the Artifact Registry.
+- The GKE instance will operate as a private cluster so a Cloud NAT will be 
+  required for outbound requests - primarily Dependency Track downloading its 
+  various datasources.
+- A Postgres-based Cloud SQL database will be used to hold Dependency Track data.
+- Secret Manager will be used to securely store database passwords.
+
+![The GKE-based deployment as describe in the paragraph above.](img/deploy_gke.png)
 
 A [_Troubleshooting_](#troubleshooting) section has been provided to help out with
 issues that you may encounter.
@@ -351,7 +380,7 @@ It's useful to designate a default region for Compute Engine (which runs the GKE
 gcloud config set compute/region $GCP_REGION
 ```
 
-Now add your domains to the commands below. 
+Add your domains to the commands below. 
 `DT_DOMAIN_API` will provide the API Server (e.g. `api.example.com`)
 and `DT_DOMAIN_UI` provides the frontend (e.g. `ui.example.com`).
 
@@ -365,7 +394,8 @@ export DT_DOMAIN_UI=<Your chosen domain name>
 We'll create TLS certificates for the API and user interface endpoints. 
 Whilst this can be done using a
 [GKE `ManagedCertificate` resource](https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs#setting_up_the_managed_certificate),
-I've decided to define these outside of Kubernetes with a view that they can be transferred as needed.
+I've decided to define these outside of Kubernetes with a view that they can be 
+transferred as needed.
 
 The provisioning of the certificates can take some time, so it's best to
 get these started early:
@@ -405,7 +435,7 @@ As DNS entries can take up to 48-hours to propagate, it's best to get this done 
 
 #### Set up a GKE cluster
 
-First, we'll create a VPC to house the private cluster. 
+We'll create a VPC to house the private cluster. 
 In the commands below we'll create a VPC and enable
 [private service access](https://cloud.google.com/sql/docs/postgres/configure-private-services-access#configure-access)
 - the latter providing the ability to create a Cloud SQL instance without a public IP address.
@@ -469,7 +499,7 @@ gcloud compute routers nats create dependency-track-nat \
     --enable-logging
 ```
 
-Now that our GKE environment is ready to go, let's create a `dependency-track` 
+Now that our GKE environment is ready to go, create a `dependency-track` 
 Kubernetes namespace to work in:
 
 ```bash
@@ -486,7 +516,7 @@ You'll find the various deployment files under the `deploy` directory.
 
 Importantly, we use the the `envsubst` command to interpolate the various environment variables 
 in the deployment files. 
-You need to install the command in your environment:
+You need to install the command in your CloudShell environment:
 
 ```bash
 sudo apt install gettext-base
@@ -505,7 +535,7 @@ kubectl apply -k .
 There are more steps involved when deploying the API Service as we're going to 
 use a Postgres database. The steps involved are:
 
-1. Create a service account for database access
+1. Create a service account for database access via Cloud SQL Proxy
 1. Create the Postgres database in Cloud SQL
 1. Deploy the API Service to GKE
 
@@ -537,7 +567,8 @@ kubectl annotate serviceaccount \
   dependency-track \
   iam.gke.io/gcp-service-account=dependency-track@$GCP_PROJECT_ID.iam.gserviceaccount.com
   
-# 5. Grant the cloudsql.client role to the IAM service account so that SQL Proxy can connect to the DB
+# 5. Grant the cloudsql.client role to the IAM service account so that 
+#    SQL Proxy can connect to the DB
 gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
   --role roles/cloudsql.client  \
   --member "serviceAccount:dependency-track@$GCP_PROJECT_ID.iam.gserviceaccount.com" 
@@ -573,26 +604,30 @@ gcloud beta sql instances create $DT_DB_INSTANCE \
             --database-version=POSTGRES_11 \
             --cpu=4 --memory=15 \
             --storage-auto-increase \
-            --root-password=$(gcloud secrets versions access 1 --secret=dependency-track-postgres-admin)          
+            --root-password=$(gcloud secrets versions access 1 \   
+                              --secret=dependency-track-postgres-admin)          
 
-# 2. Setup a database user
+# 2. Set up a database user
 gcloud sql users create dependency-track-user \
             --instance=$DT_DB_INSTANCE \
-            --password=$(gcloud secrets versions access 1 --secret=dependency-track-postgres-user)
+            --password=$(gcloud secrets versions access 1 \
+                          --secret=dependency-track-postgres-user)
 
 # 3. Create the database            
 gcloud sql databases create dependency-track \
             --instance=$DT_DB_INSTANCE
 
 # 4. We'll need the connection details in the kubernetes configuration
-export DT_DB_CONNECTION=$(gcloud sql instances describe $DT_DB_INSTANCE --format="value(connectionName)")
+export DT_DB_CONNECTION=$(gcloud sql instances describe $DT_DB_INSTANCE \
+                            --format="value(connectionName)")
 ```
 
 The API Server will need the database user password so this is set up as a Kubernetes secret:
 
 ```bash
 kubectl create secret generic dependency-track-postgres-user-password \
-  --from-literal ALPINE_DATABASE_PASSWORD=$(gcloud secrets versions access 1 --secret=dependency-track-postgres-user) 
+  --from-literal ALPINE_DATABASE_PASSWORD=$(gcloud secrets versions access 1 \
+                                              --secret=dependency-track-postgres-user) 
 ```
 
 ##### Launch the API Server
@@ -612,12 +647,8 @@ a separate Cloud Shell terminal tailing the logs with:
 kubectl logs -f dependency-track-apiserver-0 dependency-track-apiserver
 ```
 
-This will take up to half an hour so give it time. When it's ready you should see the following
-line in the logs: `Completed metrics update on vulnerability database`. You can now visit the 
-API Server site. The following paths may be of interest:
-
-- `/api/version` - the service version
-- `/api/swagger.json` - the OpenAPI definition 
+Head to the [Using Dependency Track](#using-dependency-track) section to start using 
+the system.
 
 #### Troubleshooting
 
@@ -681,14 +712,23 @@ kubectl delete pod/proxy
 
 ## Using Dependency Track
 
-Once you have Dependency Track running, you're ready to login to the frontend - just head to the relevant domain:
+The API Server loads a range of data and will take up to half an hour to be ready.
+When it is ready you should see the following line in the logs: 
+`Completed metrics update on vulnerability database`. You can now visit the 
+API Server site. The following paths may be of interest:
+
+- `/api/version` - the service version
+- `/api/swagger.json` - the OpenAPI definition
+
+Once you have Dependency Track running, you're ready to login to the frontend - 
+just head to the relevant domain:
 
 - If you used the Cloud Run pathway, you can determine the URL by running 
   `gcloud run services describe dependency-track-frontend`. 
 - If you went the GKE route, you will have designated a domain name for the URI.
 
-Once you've accessed the frontend, enter `admin`/`admin` for the initial login username/password -
-you'll be prompted to set up a better password. 
+Once you've accessed the frontend, enter `admin`/`admin` for the initial login 
+username/password - you'll be prompted to set up a better password. 
 Refer to 
 [Dependency Track's Initial Startup document](https://docs.dependencytrack.org/getting-started/initial-startup/)
 for more information.
@@ -713,7 +753,7 @@ command in the base of the tutorial directory to download a copy to your compute
 cloudshell download bom.json
 ```
 
-You can now click on the "Upload BOM" button and be able to select the `bom.json` file for upload.
+You can now click on the "Upload BOM" button and select the `bom.json` file for upload.
 
 ![Uploading the BOM](img/upload_bom.png)
 
@@ -737,7 +777,8 @@ Add `PROJECT_CREATION_UPLOAD` permission to the "Automation" team.
 
 ![The permissions listing for the team](img/teams_perm.png)
 
-Copy the API Key that is displayed and set up the API Key as a variable in your terminal:
+Copy the API Key that is displayed for the "Automation" team 
+and set up the API Key as a variable in your terminal:
 
 ```bash
 export DT_API_KEY=<YOUR API KEY>
@@ -746,7 +787,7 @@ export DT_API_KEY=<YOUR API KEY>
 Once you've set up the "Automation" team's permissions and API key you're ready
 to upload a BOM to your Dependency Track service. 
 
-Generate and upload the BOM:
+Generate and upload the XML version of the BOM:
 
 ```bash
 # 1. Generate the BOM
@@ -769,8 +810,7 @@ see there's now a `demo-project` with version `0.1.0`:
 
 ![Project listing with demo_project version 0.1.0](img/listing_demo_project.png)
 
-As before, you can click on the project and explore the dependencies. Don't forget 
-that you can also query the Dependency Track API to get details about the project.
+As before, you can click on the project and explore the dependencies.
 
 ### Using Cloud Build
 
@@ -815,8 +855,9 @@ gsutil mb gs://${GCP_PROJECT_ID}-build
 
 If you uploaded the BOM from the terminal you may want to delete the project/version 
 in Dependency Track before you submit the BOM using Cloud Build. To delete it,
-select the project from the list and click "View Details" in the project screen (below).
-The pop-up dialog will have a "Delete" button that blows it away.
+go to the Dependency Track frontend, select the project from the list and click 
+"View Details" in the project screen (below).
+The pop-up dialog will have a "Delete" button that deleted the project.
 
 ![The View Details link is used to open the display to delete the project](img/delete_demo_project.png)
 
@@ -849,11 +890,13 @@ API goodness. The address will look something like `https://<DT_DOMAIN_API>/api/
 
 ## Cleaning up
 
-To avoid incurring charges to your Google Cloud account for the resources used in this tutorial, you can delete the project.
+To avoid incurring charges to your Google Cloud account for the resources 
+used in this tutorial, you can delete the project.
 
 Deleting a project has the following consequences:
 
-- If you used an existing project, you'll also delete any other work that you've done in the project.
+- If you used an existing project, you'll also delete any other work that 
+  you've done in the project.
 - You can't reuse the project ID of a deleted project. 
   If you created a custom project ID that you plan to use in the future, 
   delete the resources inside the project instead. 
@@ -887,14 +930,16 @@ production roll-out needs to consider a number of additional aspects, including:
   long-term production service. For example, review the Cloud SQL user as it has very broad 
   access that can be reduced. 
 - _Set up access_: Consider how users will access the system - Dependency Track 
-  [supports OIDC](https://docs.dependencytrack.org/getting-started/openidconnect-configuration/) - saving you from managing authentication in the Dependency Track service. 
-  You might also wish to explore [Identity Aware Proxy](https://cloud.google.com/iap) for remote  access to the system.
+  [supports OIDC](https://docs.dependencytrack.org/getting-started/openidconnect-configuration/) - 
+  saving you from managing authentication in the Dependency Track service. 
+  You might also wish to explore [Identity Aware Proxy](https://cloud.google.com/iap) 
+  for remote access to the system.
 - _Utilise security and operations services_: Consider tools such as
   [Cloud Armor](https://cloud.google.com/armor) and Google Cloud's 
   [Operations Suite](https://cloud.google.com/products/operations) for the
   ongoing security and operation of your system.
 
-Having a model to track dependecies is a great step. Configuring the system to
+Having a model to track dependecies is a great first step. Configuring the system to
 notify you when a vulnerability pops up is even better. Check out the [Dependency
 Track notifications](https://docs.dependencytrack.org/integrations/notifications/)
 document for options - the webhooks model is a useful approach to automating 
