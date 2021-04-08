@@ -459,7 +459,8 @@ in the deployment files. You need to install the command in your CloudShell envi
 sudo apt install gettext-base
 ```
 
-When ready, deploy the frontend workload to the GKE cluster:
+When ready, deploy the frontend workload to the GKE cluster.
+From the base directory of the tutorial:
 
 ```bash
 cd deploy/frontend
@@ -565,7 +566,7 @@ kubectl create secret generic dependency-track-postgres-user-password \
 
 #### Launch the API Server
 
-After all of that we can now fire up the Kubernetes resources much as we did for the frontend:
+After all of that we can now fire up the Kubernetes resources much as we did for the frontend.
 
 ```bash
 cd ../api
