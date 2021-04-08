@@ -67,7 +67,9 @@ In order to follow this tutorial, you need to be comfortable using the Linux she
 You will need a [Google Cloud](https://cloud.google.com/) account and a 
 [project](https://cloud.google.com/resource-manager/docs/creating-managing-projects) with
 a billing account attached. It is strongly recommended that you create a project specifically
-for this tutorial and not reuse an existing project.
+for this tutorial and not reuse an existing project. You will need to be a 
+[project owner](https://cloud.google.com/iam/docs/understanding-roles#basic-definitions)
+for your chosen project.
 
 You should follow this guide in [Cloud Shell](https://cloud.google.com/shell) 
 as it has all of the software required by this tutorial.
@@ -129,7 +131,7 @@ flask 1.1.2 A simple framework for building complex web applications.
 ```
 
 The [CycloneDX](https://cyclonedx.org/) project defines a schema for 
-software bill of materials (SBOMs) as well as providing  
+software bill of materials (SBOMs) as well as providing 
 [tools](https://cyclonedx.org/tool-center/) that can be used with various programming languages
 and CI/CD tools. 
 The Python version ([`cyclonedx-bom`](https://pypi.org/project/cyclonedx-bom/)) is included 
@@ -299,8 +301,6 @@ echo $DT_APISERVER
 
 Once deployed you'll get a URL to access the API Server.
 The API Server can take a while (up to 30-mins) to download the required data from various data sources.
-During this time the API is not available so don't panic if you get an error trying to access
-the URL.
 
 
 #### Deploy the frontend
@@ -321,7 +321,7 @@ Now that the Cloud Run services have been configured, move on to the
 
 ### Deploy to Google Kubernetes Engine and Cloud SQL
 
-The Cloud Run version is a quick demo approach that uses an embedded H2 database. The recommended 
+The Cloud Run pathway is a quick demo approach that uses an embedded H2 database. The recommended 
 [Dependency Track resources]([https://docs.dependencytrack.org/getting-started/deploy-docker/])
 are rather hefty with the API Server looking for 4 CPU cores and 16GB RAM - exceeding what we
 can get from Cloud Run.
@@ -381,10 +381,12 @@ gcloud config set compute/region $GCP_REGION
 
 Add your domains to the commands below. 
 `DT_DOMAIN_API` will provide the API Server (e.g. `api.example.com`)
-and `DT_DOMAIN_UI` provides the frontend (e.g. `ui.example.com`).
+and `DT_APISERVER` is its URL (e.g. `https://api.example.com`).
+`DT_DOMAIN_UI` provides the frontend (e.g. `ui.example.com`).
 
 ```bash
 export DT_DOMAIN_API=<Your chosen domain name>
+export DT_APISERVER=https://$DT_DOMAIN_API
 export DT_DOMAIN_UI=<Your chosen domain name>
 ```
 
@@ -768,7 +770,8 @@ and explore the information.
 Uploading a BOM manually is not a long-term solution. Let's take a look at how a BOM
 can be directly uploaded to the API. 
 
-In the frontend user interface, go to the "Administration" screen and select "Teams".
+In the frontend user interface, go to the "Administration" screen and select "Teams"
+from the "Access Management" section.
 You'll see a team named "Automation", click on this to view the team's configuration.
 
 ![The Teams listing screen](img/teams.png)
@@ -796,7 +799,7 @@ poetry export --without-hashes>requirements.txt
 poetry run cyclonedx-py
 
 # 2. Upload the BOM
-poetry run ./bom-loader.py --url https://$DT_DOMAIN_API --api-key=$DT_API_KEY
+poetry run ./bom-loader.py --url $DT_APISERVER --api-key=$DT_API_KEY
 ```
 
 The `bom-loader.py` script performs the following:
@@ -817,7 +820,14 @@ As before, you can click on the project and explore the dependencies.
 For the next iteration of submitting a BOM let's look at integrating the approach with
 your CI/CD workflow. 
 
-We'll start by creating a builder image that we can use in Cloud Build. First,
+Start by enabling the Cloud Build and Cloud Storage APIs:
+
+```bash
+gcloud services enable cloudbuild.googleapis.com \
+  storage-component.googleapis.com
+```
+
+Next, we'll create a builder image that we can use in Cloud Build. First,
 create a new repository called `builders`:
 
 ```bash
