@@ -301,7 +301,8 @@ echo $DT_APISERVER
 
 Once deployed you'll get a URL to access the API Server.
 The API Server can take a while (up to 30-mins) to download the required data from various data sources.
-
+Review the Cloud Run [Logging and viewing logs](https://cloud.google.com/run/docs/logging) 
+guide to check your logs.
 
 #### Deploy the frontend
 
@@ -716,8 +717,10 @@ kubectl delete pod/proxy
 
 The API Server loads a range of data and will take up to half an hour to be ready.
 When it is ready you should see the following line in the logs: 
-`Completed metrics update on vulnerability database`. You can now visit the 
-API Server site. The following paths may be of interest:
+`[AlpineServlet] Dependency-Track is ready`.
+
+When the API Server is ready, you can now visit the API Server site.
+The following paths may be of interest:
 
 - `/api/version` - the service version
 - `/api/swagger.json` - the OpenAPI definition
@@ -875,7 +878,7 @@ With that done you can now submit the build with the following command:
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions=_DT_DOMAIN_API=$DT_DOMAIN_API,_DT_API_KEY=$DT_API_KEY . 
+  --substitutions=_DT_APISERVER=$DT_APISERVER,_DT_API_KEY=$DT_API_KEY . 
 ```
 
 Your build will start and push the generated BOM to Dependency Track.
@@ -885,7 +888,7 @@ command will list all projects
 
 ```bash
 curl --location --request GET \
-  "https://$DT_DOMAIN_API/api/v1/project" \
+  "$DT_APISERVER/api/v1/project" \
   --header "x-api-key: $DT_API_KEY"
 ```
 
@@ -893,7 +896,7 @@ This one provides basic project details:
 
 ```bash
 curl --location --request GET \
-  "https://$DT_DOMAIN_API/api/v1/project/lookup?name=demo-project&version=0.1.0" \
+  "$DT_APISERVER/api/v1/project/lookup?name=demo-project&version=0.1.0" \
   --header "x-api-key: $DT_API_KEY"
 ```
 
