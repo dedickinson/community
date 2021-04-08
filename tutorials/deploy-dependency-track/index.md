@@ -103,11 +103,15 @@ cd community/tutorials/deploy-dependency-track
 The demonstration ("demo") project has no code - 
 it's just there to include some libraries (namely `flask` and a very old version of `Django`).
 
+__WARNING__: The demonstration project includes a very old version of Django with known vulnerabilities.
+Do not try to run the project - it is purely set up to demonstrate Dependency Track's ability to report
+on vulnerabilities.
+
 Run the following commands in Cloud Shell to set up the project:
 
 ```bash
 # Upgrade pip 
-python3 -m pip install poetry
+python3 -m pip install poetry --user
 
 # Prepare the demo project
 cd demo-project
@@ -537,30 +541,26 @@ gcloud beta sql instances create $DT_DB_INSTANCE \
             --database-version=POSTGRES_11 \
             --cpu=4 --memory=15 \
             --storage-auto-increase \
-            --root-password=$(gcloud secrets versions access 1 \   
-                              --secret=dependency-track-postgres-admin)          
+            --root-password=$(gcloud secrets versions access 1 --secret=dependency-track-postgres-admin)          
 
 # 2. Set up a database user
 gcloud sql users create dependency-track-user \
             --instance=$DT_DB_INSTANCE \
-            --password=$(gcloud secrets versions access 1 \
-                          --secret=dependency-track-postgres-user)
+            --password=$(gcloud secrets versions access 1 --secret=dependency-track-postgres-user)
 
 # 3. Create the database            
 gcloud sql databases create dependency-track \
             --instance=$DT_DB_INSTANCE
 
 # 4. We'll need the connection details in the kubernetes configuration
-export DT_DB_CONNECTION=$(gcloud sql instances describe $DT_DB_INSTANCE \
-                            --format="value(connectionName)")
+export DT_DB_CONNECTION=$(gcloud sql instances describe $DT_DB_INSTANCE --format="value(connectionName)")
 ```
 
 The API Server will need the database user password so this is set up as a Kubernetes secret:
 
 ```bash
 kubectl create secret generic dependency-track-postgres-user-password \
-  --from-literal ALPINE_DATABASE_PASSWORD=$(gcloud secrets versions access 1 \
-                                              --secret=dependency-track-postgres-user) 
+  --from-literal ALPINE_DATABASE_PASSWORD=$(gcloud secrets versions access 1 --secret=dependency-track-postgres-user) 
 ```
 
 #### Launch the API Server
@@ -591,6 +591,12 @@ If you visit the frontend or API Server you might get a TLS error such as `ERR_S
 Check the TLS certificate status with `gcloud compute ssl-certificates list` - you need both of the
 certificates to be listed as "ACTIVE". If you see "FAILED_NOT_VISIBLE" just wait a while for the certificate to
 be provisioned to the load balancer. This can take some time (up to 60-minutes).
+
+It can be useful to open a new terminal and set a watch on the certificate listing:
+
+```bash
+watch -n 30 gcloud compute ssl-certificates list
+```
 
 Check out 
 [Troubleshooting SSL certificates](https://cloud.google.com/load-balancing/docs/ssl-certificates/troubleshooting)
@@ -647,8 +653,7 @@ kubectl delete pod/proxy
 ## Using Dependency Track
 
 The API Server loads a range of data and will take up to half an hour to be ready.
-When it is ready you should see the following line in the logs: 
-`[AlpineServlet] Dependency-Track is ready`.
+You may also need to wait for the TLS certificates to be provisioned.
 
 When the API Server is ready, you can now visit the API Server site.
 The following paths may be of interest:
