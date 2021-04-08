@@ -19,7 +19,7 @@ steps:
 
   - name: ${_REGION}-docker.pkg.dev/$PROJECT_ID/builders/poetry:1
     entrypoint: "./bom-loader.py"
-    args: ["--url", "https://${_DT_DOMAIN_API}", "--api-key", "${_DT_API_KEY}"]
+    args: ["--url", "${_DT_APISERVER}", "--api-key", "${_DT_API_KEY}"]
 
 substitutions:
   _REGION: us-central1
