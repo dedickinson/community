@@ -508,7 +508,7 @@ gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
 
 #### Create a Cloud SQL instance
 
-Next up, we''ll set up a Cloud SQL instance running Postgres 11. 
+Next up, we'll set up a Cloud SQL instance running Postgres 11. 
 
 The database passwords will be stored in [Secret Manager](https://cloud.google.com/secret-manager)
 so that we don't have to write them down on a scrap of paper. Before you rush into the setup,
@@ -831,7 +831,7 @@ API goodness. The address will look something like `https://<DT_DOMAIN_API>/api/
 
 Take some time to explore Dependency Track and consider how/where you might use it.
 The scenarios provided here (manual upload, command line upload and CI/CD integration)
-are good starting points for including dependency tracking in your software supply chain.
+are good starting points for including dependency tracking as part of managing your software supply chain.
 
 ## Cleaning up
 
