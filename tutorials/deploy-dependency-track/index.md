@@ -257,20 +257,14 @@ gcloud artifacts docker images list $GCP_REGISTRY
 
 ## Deploy to Google Kubernetes Engine and Cloud SQL
 
-The Cloud Run pathway is a quick demo approach that uses an embedded H2 database. The recommended 
-[Dependency Track resources]([https://docs.dependencytrack.org/getting-started/deploy-docker/])
-are rather hefty with the API Server looking for 4 CPU cores and 16GB RAM - exceeding what we
-can get from Cloud Run.
-
-For a more substantial approach, this pathway configures the system to run in 
+In this section we configure the system to run in 
 Google Kubernetes Engine (GKE) and use a Cloud SQL Postgres database. 
 
 Before you continue please note that you will need access to a domain in which you can create two
 sub-domains - one for each of the Frontend and the API Server. This is necessary as we'll be creating
 TLS certificates for the domains. 
 
-This pathway is much more involved that the Cloud Run option. As you can see from
-the diagram below, a number of services will be utilised:
+As you can see from the diagram below, a number of services will be utilised:
 
 - The Dependency Track Frontend and API Server components will be hosted as
   GKE pods, fronted by Cloud Load Balancers. The required container images will
@@ -662,12 +656,7 @@ The following paths may be of interest:
 - `/api/version` - the service version
 - `/api/swagger.json` - the OpenAPI definition
 
-Once you have the Dependency Track API and frontend running, you're ready to login to the frontend - 
-just head to the relevant domain:
-
-- If you used the Cloud Run pathway, you can determine the URL by running 
-  `gcloud run services describe dependency-track-frontend`. 
-- If you went the GKE route, you will have designated a domain name for the URI.
+Once you have the Dependency Track API and frontend running, you're ready to login to the frontend.
 
 Once you've accessed the frontend, enter `admin`/`admin` for the initial login 
 username/password - you'll be prompted to set up a better password. 
