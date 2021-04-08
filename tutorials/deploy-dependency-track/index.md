@@ -1,8 +1,8 @@
 ---
 title: Deploying OWASP Dependency Track to Google Cloud
-description: Learn how to deploy the OWASP Dependency Track system to Cloud Run or Google Kubernetes Engine.
+description: Learn how to deploy the OWASP Dependency Track system to Google Kubernetes Engine.
 author: dedickinson
-tags: owasp, dependency track, cloud run, kubernetes, cloud build, cloud sql, supply chain
+tags: owasp, dependency track, kubernetes, cloud build, cloud sql, supply chain
 date_published: 2020-04-28
 ---
 
@@ -37,12 +37,11 @@ and illustrates its use in a small Python demo.
 
 ## Objectives
 
-1. [_Generate an SBOM_](#generate-an-sbom) takes you through creating an SBOM for a basic project.
-1. [_Deploy Dependency Track_](#deploy-dependency-track) provides basic setup for a deployment. 
-    Two pathways are offered for deployment: 
-    - Cloud Run for a quick demo rollout
-    - Google Kubernetes Engine and Cloud SQL for a more long-term approach
-1. [_Using Dependency Track_](#using-dependency-track) will then demonstrate uploading an SBOM and integrating
+1. [Generate an SBOM](#generate-an-sbom) takes you through creating an SBOM for a basic project.
+1. [Prepare the Dependency Track images](#prepare-the-dependency-track-images) sets up an Artifact Registry 
+  and the required images.
+1. [Deploy Dependency Track](#deploy-dependency-track) deploys Dependency Track to Google Kubernetes Engine. 
+1. [Using Dependency Track](#using-dependency-track) will then demonstrate uploading an SBOM and integrating
     Cloud Build.
 
 
@@ -52,7 +51,6 @@ This tutorial uses billable components of Google Cloud, including the following:
 
 *   [Artifact Registry](https://cloud.google.com/artifact-registry)
 *   [Container Analysis](https://cloud.google.com/container-analysis/docs/container-analysis)
-*   [Cloud Run](https://cloud.google.com/run)
 *   [External IP address](https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address)
 *   [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine)
 *   [Cloud SQL](https://cloud.google.com/sql/)
@@ -74,11 +72,8 @@ for your chosen project.
 You should follow this guide in [Cloud Shell](https://cloud.google.com/shell) 
 as it has all of the software required by this tutorial.
 
-If you choose to deploy Dependency Track to Cloud Run you do not have any further prerequisites.
-
-If you choose to deploy Dependency Track to Google Kubernetes Engine you will need 
-access to a domain for which you can create two sub-domains - one for each of the 
-Frontend and the API Server. If you do not have a domain you can visit
+You will need access to a domain for which you can create two sub-domains - 
+one for each of the Frontend and the API Server. If you do not have a domain you can visit
 [Google Domains](https://domains.google.com) and register one there.
 
 ### Prepare your shell
@@ -106,7 +101,7 @@ cd community/tutorials/deploy-dependency-track
 ## Generate an SBOM
 
 The demonstration ("demo") project has no code - 
-it's just there to include some libraries (namely `flask`).
+it's just there to include some libraries (namely `flask` and a very old version of `Django`).
 
 Run the following commands in Cloud Shell to set up the project:
 
@@ -194,22 +189,14 @@ From that snippet you can see:
 
 We'll return to the `bom` file when we've set up a Dependency Track service.
 
-## Deploy Dependency Track
 
-This tutorial provides 2 pathways for deploying Dependency Track:
+## Prepare the Dependency Track images
 
-1. Deploy a quick demonstrator to Cloud Run
-1. Setup a more long-term environment in Google Kubernetes Engine (GKE) and Cloud SQL -
-   _this requires you to have the ability to add subdomains to a domain name under your control_.
-
-Before taking either pathway we'll prepare the Dependency Track container images for use in Cloud Run or GKE.
 There are two images we need:
 
 - The `frontend` image provides the web-based user interface
 - The `apiserver` image provides an Open API-based interface that is used by the frontend and when 
   interacting with Dependency Track from other systems (such as submitting a BOM)
-
-### Set up the Dependency Track images
 
 The [Artifact Registry](https://cloud.google.com/artifact-registry) service will be utilised
 to store container images. [Container Analysis](https://cloud.google.com/container-analysis/docs/container-analysis)
@@ -264,63 +251,7 @@ You can always check your image collection with the following command:
 gcloud artifacts docker images list $GCP_REGISTRY
 ```
 
-### Deploy to Cloud Run
-
-In this pathway we'll configure Dependency Track to run in [Cloud Run](https://cloud.google.com/run).
-This is a useful approach for quickly creating a demo instance for evaluation purposes.
-As you can see in the diagram below, two Cloud Run services are created to serve the
-Dependency Track Frontend and API Server. The previously configured Artifact Registry
-provides the container images used in the Cloud Run services.
-
-![Architectural diagram depicting a PC accessing the frontend and API components that are operating as Cloud Run services. Artifact Registry is depicted as providing images to the Cloud Run services.](img/deploy_cloud_run.png)
-
-Enable the Cloud Run API and set the default region. We'll also use the `managed` platform approach
-(rather than an Anthos platform):
-
-```bash
-gcloud services enable run.googleapis.com 
-
-gcloud config set run/platform managed
-gcloud config set run/region $GCP_REGION
-```
-
-#### Deploy the API Server
-
-Launch the API Server in Cloud Run with the following command:
-
-```bash
-gcloud run deploy dependency-track-apiserver \
-  --image $GCP_REGISTRY/apiserver:4.1.0 \
-  --allow-unauthenticated --cpu=2 --memory=8Gi --port=8080
-  
-export DT_APISERVER=$(gcloud run services describe dependency-track-apiserver \
-                        --format="value(status.url)")
-
-echo $DT_APISERVER
-```
-
-Once deployed you'll get a URL to access the API Server.
-The API Server can take a while (up to 30-mins) to download the required data from various data sources.
-Review the Cloud Run [Logging and viewing logs](https://cloud.google.com/run/docs/logging) 
-guide to check your logs.
-
-#### Deploy the frontend
-
-Launch the Frontend in Cloud Run with the following command:
-
-```bash
-gcloud run deploy dependency-track-frontend \
-  --image $GCP_REGISTRY/frontend:1.2.0 \
-  --allow-unauthenticated --cpu=2 --memory=1Gi --port=80 \
-  --set-env-vars="API_BASE_URL=$DT_APISERVER"
-```
-
-#### Next steps
-
-Now that the Cloud Run services have been configured, move on to the
-[Using Dependency Track](#using-dependency-track) section.
-
-### Deploy to Google Kubernetes Engine and Cloud SQL
+## Deploy to Google Kubernetes Engine and Cloud SQL
 
 The Cloud Run pathway is a quick demo approach that uses an embedded H2 database. The recommended 
 [Dependency Track resources]([https://docs.dependencytrack.org/getting-started/deploy-docker/])
@@ -351,7 +282,7 @@ the diagram below, a number of services will be utilised:
 A [_Troubleshooting_](#troubleshooting) section has been provided to help out with
 issues that you may encounter.
 
-#### Initial set up
+### Initial set up
 
 There's quite a few services we'll need to enable:
 
@@ -391,7 +322,7 @@ export DT_APISERVER=https://$DT_DOMAIN_API
 export DT_DOMAIN_UI=<Your chosen domain name>
 ```
 
-#### Create TLS certificates
+### Create TLS certificates
 
 We'll create TLS certificates for the API and user interface endpoints. 
 Whilst this can be done using a
@@ -420,7 +351,7 @@ You can check in on the progress of the certificates by running
 The setup of the certificates only completes when they're aligned to a 
 Load Balancer so keep going with the instructions.
 
-#### Create external IPs
+### Create external IPs
 
 Next, set up two external IP addresses:
 
@@ -437,7 +368,7 @@ export DT_IP_UI=$(gcloud compute addresses describe dependency-track-ip-ui \
 At this point you can add your chosen domain names and the IP addresses to your DNS system. 
 As DNS entries can take up to 48-hours to propagate, it's best to get this done now. 
 
-#### Set up a GKE cluster
+### Set up a GKE cluster
 
 We'll create a VPC to house the private GKE cluster. 
 In the commands below we create a VPC and enable
@@ -510,7 +441,7 @@ kubectl create namespace dependency-track
 kubectl config set-context --current --namespace=dependency-track
 ```
 
-#### Deploy the Dependency Track frontend
+### Deploy the Dependency Track frontend
 
 The deployment process makes use of the 
 [`kustomize`](https://kubectl.docs.kubernetes.io/guides/introduction/)
@@ -532,7 +463,7 @@ cat kustomization.base.yaml | envsubst >kustomization.yaml
 kubectl apply -k .
 ```
 
-#### Deploy the API Server
+### Deploy the API Server
 
 There are more steps involved when deploying the API Server as we're going to 
 use a Postgres database. The steps involved are:
@@ -541,7 +472,7 @@ use a Postgres database. The steps involved are:
 1. Create the Postgres database in Cloud SQL
 1. Deploy the API Server to GKE
 
-##### Set up a service account
+#### Set up a service account
 
 As the API Server needs to access a database, we'll create and use a service account with GKE
 [workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
@@ -576,7 +507,7 @@ gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
   --member "serviceAccount:dependency-track@$GCP_PROJECT_ID.iam.gserviceaccount.com" 
 ```
 
-##### Create a Cloud SQL instance
+#### Create a Cloud SQL instance
 
 Next up, we''ll set up a Cloud SQL instance running Postgres 11. 
 
@@ -632,7 +563,7 @@ kubectl create secret generic dependency-track-postgres-user-password \
                                               --secret=dependency-track-postgres-user) 
 ```
 
-##### Launch the API Server
+#### Launch the API Server
 
 After all of that we can now fire up the Kubernetes resources much as we did for the frontend:
 
@@ -652,9 +583,9 @@ kubectl logs -f dependency-track-apiserver-0 dependency-track-apiserver
 Head to the [Using Dependency Track](#using-dependency-track) section to start using 
 the system.
 
-#### Troubleshooting
+### Troubleshooting
 
-##### TLS error
+#### TLS error
 
 If you visit the frontend or API Server you might get a TLS error such as `ERR_SSL_VERSION_OR_CIPHER_MISMATCH`.
 Check the TLS certificate status with `gcloud compute ssl-certificates list` - you need both of the
@@ -665,7 +596,7 @@ Check out
 [Troubleshooting SSL certificates](https://cloud.google.com/load-balancing/docs/ssl-certificates/troubleshooting)
 for more info.
 
-##### GKE Connectivity
+#### GKE Connectivity
 
 If needed, you can check out the cluster by firing up a `busybox` instance: 
 
@@ -675,7 +606,7 @@ kubectl run --rm -it --image=busybox -- sh
 
 Then run something like: `wget -O - http://www.example.com`
 
-##### Checking the database
+#### Checking the database
 
 If you need to check the database using the `psql` tool, start by reviewing
 [Connecting using the Cloud SQL Proxy](https://cloud.google.com/sql/docs/postgres/connect-admin-proxy)
