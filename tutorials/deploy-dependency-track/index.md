@@ -121,6 +121,7 @@ poetry install
 Now run `poetry show --tree` and you will see the project's set of dependencies (snippet below):
 
 ```
+django 1.2 A high-level Python Web framework that encourages rapid development and clean, pragmatic design.
 flask 1.1.2 A simple framework for building complex web applications.
 ├── click >=5.1
 ├── itsdangerous >=0.24
@@ -522,6 +523,11 @@ printf SET_DBUSER_PASSWORD_HERE | gcloud secrets create dependency-track-postgre
             --data-file=-
 ```
 
+__Note:__ _using the approach above is useful for this tutorial but placing a password
+on the command line is not best practice. Review the 
+[Creating and accessing secrets](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets#secretmanager-add-secret-version-cli)
+guide for alternatives._
+
 We can now create the database server and associated user and database:
 
 ```bash
@@ -550,6 +556,9 @@ gcloud sql databases create dependency-track \
 # 4. We'll need the connection details in the kubernetes configuration
 export DT_DB_CONNECTION=$(gcloud sql instances describe $DT_DB_INSTANCE --format="value(connectionName)")
 ```
+
+__Note:__ _at time of writing, private IP for Cloud SQL is in beta and requires the
+`gcloud beta sql` call to access the functionality._
 
 The API Server will need the database user password so this is set up as a Kubernetes secret:
 
@@ -690,9 +699,22 @@ You can now click on the "Upload BOM" button and select the `bom.json` file for 
 
 When you return to the project screen you should see the components listed. If not,
 click on the refresh button to the right of the screen. Take some time to click around
-and explore the information.
+and explore the information. 
 
 ![Project screen with components listed](img/component_listing.png)
+
+The `django` component has a high risk score and seems to be the source 
+of several issues. If you click on the `django` link, you'll be taken to 
+the overview page for the component. Here you'll see that `django` 1.2
+has numerous known vulnerabilities: 1 Critical, 3 High, 27 Medium and 1 Low.
+
+![Project screen with components listed](img/component_listing_overview.png)
+
+Clicking on the `Vulnerabilities` tab will then take you to the listing for
+all the known component vulnerabilities. You can then click through to each 
+vulnerability (such as "CVE-2011-4137") to get further details about the vulnerability.
+
+![Project screen with components listed](img/component_listing_vulns.png)
 
 ### Uploading a BOM from the terminal
 
