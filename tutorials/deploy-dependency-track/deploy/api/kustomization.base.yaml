@@ -17,10 +17,10 @@ configMapGenerator:
 images:
   - name: dependency-track-apiserver
     newName: $GCP_REGISTRY/apiserver
-    newTag: "4.1.0"
+    newTag: "4.2.1"
   - name: cloud-sql-proxy
     newName: gcr.io/cloudsql-docker/gce-proxy
-    newTag: "1.17"
+    newTag: "1.22"
 
 resources:
 - pvc.yaml

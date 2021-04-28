@@ -10,7 +10,7 @@ configMapGenerator:
 images:
   - name: dependency-track-frontend
     newName: $GCP_REGISTRY/frontend
-    newTag: 1.2.0
+    newTag: 4.2.0
 
 resources:
 - deployment.yaml

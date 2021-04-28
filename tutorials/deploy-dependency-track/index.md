@@ -100,6 +100,15 @@ git clone https://github.com/GoogleCloudPlatform/community.git
 cd community/tutorials/deploy-dependency-track
 ```
 
+_Note:_ A basic set up script is available in [scripts/services.sh](scripts/services.sh).
+This can be useful if Cloud Shell is disconnected but does not
+setup all variables etc. 
+Please ensure you review the script before running the command below:
+
+```bash
+source scripts/services.sh
+```
+
 ## Generate an SBOM
 
 The demonstration ("demo") project has no code - 
