@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-# A utility script to set up environment variables, config and GCP services
+# A utility script to set up some of the environment variables, config and GCP services
 
 export GCP_PROJECT_ID=$(gcloud config get-value project)
 
