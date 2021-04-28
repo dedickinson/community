@@ -101,8 +101,8 @@ cd community/tutorials/deploy-dependency-track
 ```
 
 _Note:_ A basic set up script is available in [scripts/services.sh](scripts/services.sh).
-This can be useful if Cloud Shell is disconnected but does not
-setup all variables etc. 
+This can be useful if Cloud Shell is disconnected but be aware that the script does not
+set up all variables etc. 
 Please ensure you review the script before running the command below:
 
 ```bash
@@ -126,6 +126,7 @@ pip3 install --upgrade pip
 
 # Install poetry
 python3 -m pip install poetry --user
+export PATH=$PATH:$HOME/.local/bin
 
 # Prepare the demo project
 cd demo-project
@@ -274,9 +275,9 @@ docker push $GCP_REGISTRY/apiserver:4.2.1
 And then pull/push the [Dependency Track Front End (UI)](https://hub.docker.com/r/dependencytrack/frontend) image:
 
 ```bash
-docker pull docker.io/dependencytrack/frontend:4.2.0
-docker tag docker.io/dependencytrack/frontend:4.2.0 $GCP_REGISTRY/frontend:4.2.0
-docker push $GCP_REGISTRY/frontend:4.2.0  
+docker pull docker.io/dependencytrack/frontend:1.2.0
+docker tag docker.io/dependencytrack/frontend:1.2.0 $GCP_REGISTRY/frontend:1.2.0
+docker push $GCP_REGISTRY/frontend:1.2.0  
 ```
 
 You can always check your image collection with the following command:
@@ -393,6 +394,9 @@ export DT_IP_API=$(gcloud compute addresses describe dependency-track-ip-api \
                     --global --format="value(address)")
 export DT_IP_UI=$(gcloud compute addresses describe dependency-track-ip-ui \
                     --global --format="value(address)")
+
+echo "IP Address for $DT_DOMAIN_API: $DT_IP_API"
+echo "IP Address for $DT_DOMAIN_UI: $DT_IP_UI"
 ```
 
 At this point you can add your chosen domain names and the IP addresses to your DNS system. 
@@ -563,7 +567,7 @@ gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
 
 #### Create a Cloud SQL instance
 
-Next up, set up a Cloud SQL instance running Postgres 11. 
+Next up, set up a Cloud SQL instance running Postgres. 
 
 A random password will be generated for each database account and 
 stored in [Secret Manager](https://cloud.google.com/secret-manager)
@@ -638,7 +642,8 @@ start watching the status of the workload:
 kubectl get pods -w -l app=dependency-track-apiserver
 ```
 
-Once the pod's status is listed as `RUNNING`, exit the command with `ctrl+c`.
+Once the pod's status is listed as `RUNNING` with `2/2` containers ready,
+exit the command with `ctrl+c`.
 
 To track the progress of the API Server's data load,
 consider opening a separate Cloud Shell terminal tailing the logs with:
@@ -694,7 +699,7 @@ Next, start up a Cloud SQL Auth Proxy in your GKE cluster with the following com
 
 ```bash
 kubectl run proxy --port 5432 --serviceaccount=dependency-track \
-  --image=gcr.io/cloudsql-docker/gce-proxy:1.17 -- /cloud_sql_proxy \
+  --image=gcr.io/cloudsql-docker/gce-proxy:1.22.0 -- /cloud_sql_proxy \
     -instances=$DT_DB_CONNECTION=tcp:5432 \
     -ip_address_types=PRIVATE
 ```
