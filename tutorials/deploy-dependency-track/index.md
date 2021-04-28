@@ -101,8 +101,8 @@ cd community/tutorials/deploy-dependency-track
 ```
 
 _Note:_ A basic set up script is available in [scripts/services.sh](scripts/services.sh).
-This can be useful if Cloud Shell is disconnected but be aware that the script does not
-set up all variables etc. 
+This can be useful if your Cloud Shell session is disconnected but be aware that the script does not
+set up all variables etc. You don't need to run this now - just remember that it's available.
 Please ensure you review the script before running the command below:
 
 ```bash
