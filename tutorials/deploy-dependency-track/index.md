@@ -409,7 +409,7 @@ offer similar guidance.
 
 As an example, say you owned the `example.com` domain. For this tutorial you need to 
 create two subdomains. If you wanted the `api` subdomain for the Dependency Track API 
-Server and `dt` subdomain for the Dependency Track user interface, two reseource records
+Server and `dt` subdomain for the Dependency Track user interface, two resource records
 will need to be configured for your domain:
 
 | Name | Type | TTL | Data |
@@ -524,7 +524,7 @@ kubectl apply -k .
 
 ### Deploy the API Server
 
-There are more steps involved when deploying the API Server it uses a Postgres database. The steps involved are:
+There are more steps involved when deploying the API Server as it uses a Postgres database. The steps involved are:
 
 1. Create a service account for database access via Cloud SQL Auth Proxy
 1. Create the Postgres database in Cloud SQL
