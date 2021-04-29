@@ -356,7 +356,7 @@ export DT_DOMAIN_UI=<Your chosen domain name>
 TLS certificates will be created for the API and user interface endpoints. 
 Whilst this can be done using a
 [GKE `ManagedCertificate` resource](https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs#setting_up_the_managed_certificate),
-defining these outside of Kubernetes allows them to betransferred as needed. 
+defining these outside of Kubernetes allows them to be transferred as needed. 
 This isn't overly important for a tutorial environment but should be considered in a production environment.
 
 The provisioning of the certificates can take some time, so it's best to
@@ -884,7 +884,7 @@ gsutil mb gs://${GCP_PROJECT_ID}-build
 ```
 
 Cloud Build can [use secrets stored in Secret Manager](https://cloud.google.com/build/docs/securing-builds/use-secrets#configuring_builds_to_access_the_secret_from).
-This is extremely useful for automating build environments as Secret manager provides a 
+This is extremely useful for automating build environments as Secret Manager provides a 
 central place for holding sensitive information such as keys and passwords. 
 Builds can use this to quickly access required secrets without requiring command line 
 parameters. This also make it easier to rotate keys (such as the Dependency Track API key)
@@ -996,7 +996,7 @@ production roll-out needs to consider a number of additional aspects, including:
   long-term production service. For example, review the Cloud SQL user as it has very broad 
   access that can be reduced. 
 - _Review the Cloud SQL configuration_: Consider aspects such as 
-  [automated backups](https://cloud.google.com/sql/docs/postgres/backup-recovery/backing-up)and the resources (memory and vCPU) of the underlying virtual machine.
+  [automated backups](https://cloud.google.com/sql/docs/postgres/backup-recovery/backing-up) and the resources (memory and vCPU) of the underlying virtual machine.
 - _Set up access_: Consider how users will access the system - Dependency Track 
   [supports OIDC](https://docs.dependencytrack.org/getting-started/openidconnect-configuration/) - 
   saving you from managing authentication in the Dependency Track service. 
